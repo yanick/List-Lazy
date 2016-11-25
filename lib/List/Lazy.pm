@@ -16,7 +16,7 @@ C<List::Lazy> creates lists that lazily evaluate their next values on-demand.
 
 =head1 EXPORTED FUNCTIONS
 
-Lazy::List doesn't export any function by default, but will export the two following 
+Lazy::List doesn't export any function by default, but will export the three following 
 functions on request.
 
 =head2 lazy_list
@@ -42,6 +42,12 @@ be passed the previous value as C<$_>, and is expected to return the next value.
     my $palinumbers = lazy_range 99, undef, sub { do { $_++ } until $_ eq reverse $_; $_ };
 
     say join ' ', $palinumbers->next(3); # 99 101 111
+
+=head2 lazy_fixed_list
+
+    my $list = lazy_fixed_list @some_array;
+
+Creates a lazy list that will returns the values of the given array. 
 
 =head1 CLASS
 
@@ -127,6 +133,46 @@ from the new list won't affect the original list.
 
     my $odd = ( lazy_range 1, 100 )->grep( sub { $_ % 2 } );
 
+=head2 until
+
+    my $new_list = $list->until( $condition );
+
+
+Creates a new list that truncates the original list as soon
+as the condition is met.
+
+    my $to_ten = $list->until(sub{ $_ > 10 });
+
+=head2 append
+
+    my $new_list = $list->append( @other_lists );
+
+Creates a new list that will return first the elements of C<$list>,
+and those of the C<@other_lists>. 
+
+Note that the new list do a deep clone of the original lists's state, so reading
+from the new list won't affect the original lists.
+
+    my $range = lazy_range 1..100;
+    my $twice = $range->append( $range );
+
+=head2 prepend
+
+    my $new_list = $list->prepend( @other_lists );
+
+Like C<append>, but prepend the other lists to the current one.
+
+Note that the new list do a deep clone of the original lists's state, so reading
+from the new list won't affect the original lists.
+
+=head2 all
+
+    my @rest = $list->all;
+
+Returns all the remaining values of the list. Be careful: if the list is unbounded, 
+calling C<all()> on it will result into an infinite loop.
+
+
 =cut
 
 
@@ -138,11 +184,16 @@ use Clone qw/ clone /;
 
 use 5.20.0;
 
-use experimental 'signatures';
+use experimental 'signatures', 'postderef';
+
+use List::MoreUtils;
+use Carp;
+
+*list_before = *List::MoreUtils::before;
 
 extends 'Exporter::Tiny';
 
-our @EXPORT_OK = qw/ lazy_list lazy_range /;
+our @EXPORT_OK = qw/ lazy_list lazy_range lazy_fixed_list /;
 
 sub lazy_list :prototype(&@) ($generator,$state=undef) {
     return List::Lazy->new(
@@ -162,6 +213,15 @@ sub lazy_range :prototype($$@) ($min,$max,$step=1) {
     } $min;
 }
 
+sub lazy_fixed_list {
+    my @list = @_;
+    return List::Lazy->new(
+        _next => [ @list ],
+        is_done => 0,
+        generator => sub { return () },
+    );
+}
+
 has generator => (
     is => 'ro',
     required => 1, 
@@ -178,6 +238,7 @@ has _next => (
         has_next   => 'count', 
         shift_next => 'shift',
         push_next => 'push',
+        _all_next => 'elements',
     },
     default => sub { [] },
 );
@@ -191,7 +252,6 @@ sub generate_next($self) {
     local $_ = $self->state;
 
     my @values = $self->generator->();
-
     $self->state($_);
 
     $self->is_done(1) unless @values;
@@ -202,12 +262,22 @@ sub generate_next($self) {
 sub next($self,$num=1) {
     my @returns;
 
+    croak "next called in scalar context with \$num = $num"
+        if defined wantarray and not wantarray and $num != 1;
+
     while( @returns < $num and not $self->is_done ) {
         $self->push_next( $self->generate_next ) unless $self->has_next;
-        push @returns, $self->shift_next;
+        push @returns, $self->shift_next if $self->has_next;
     }
 
-    return @returns;
+    return wantarray ? @returns : $returns[0];
+}
+
+sub all ($self) {
+    my @return = $self->_all_next;
+    push @return, $self->generate_next until $self->is_done;
+    $self->_next([]);
+    return @return;
 }
 
 sub reduce($self,$reducer,$reduced=undef) {
@@ -242,6 +312,52 @@ sub grep($self,$filter) {
 
 sub spy($self,$sub) {
     $self->map(sub{ $sub->(); $_ } ); 
+}
+
+sub _clone($self,%args) {
+    return List::Lazy->new(
+        state     => clone( $self->state ),
+        generator => $self->generator,
+        _next => [ $self->_next->@* ],
+        %args
+    );
+}
+
+sub until($self,$condition) {
+    my $done;
+    return List::Lazy->new(
+        state => $self->_clone,
+        generator => sub {
+            return () if $done;
+            my @next = $_->next;
+            my @filtered = list_before( sub { $condition->() }, @next );
+            $done = @filtered < @next;
+            return @filtered;
+        },
+    );
+}
+
+sub append($self,@list) {
+
+    return List::Lazy->new(
+        state => [ map { $_->_clone } $self, @list ],
+        generator => sub {
+            while(@$_) {
+                shift @$_ while @$_ and $_->[0]->is_done;
+                last unless @$_;
+                my @next = $_->[0]->next;
+                return @next if @next;
+            }
+            return ();
+        },
+    );
+
+}
+
+sub prepend( $self, @list ) {
+    push @list, $self;
+    $self = shift @list;
+    $self->append(@list);
 }
 
 1;
