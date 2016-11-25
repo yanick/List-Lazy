@@ -133,6 +133,15 @@ from the new list won't affect the original list.
 
     my $odd = ( lazy_range 1, 100 )->grep( sub { $_ % 2 } );
 
+=head2 spy
+
+    my $new_list = $list->spy( $sub );
+
+Creates a new list that will execute the spy C<$sub> for
+every value it sees (with the value assigned to C<$_>). 
+
+If C<$sub> is not given, it'll C<carp> the values.
+
 =head2 until
 
     my $new_list = $list->until( $condition );
@@ -292,12 +301,10 @@ sub reduce($self,$reducer,$reduced=undef) {
 }
 
 sub map($self,$map) {
-    my $gen = $self->generator;
-
     return List::Lazy->new(
-        state => clone( $self->state ),
+        state => $self->_clone,
         generator => sub {
-            while( my @next = $gen->() ) {
+            while( my @next = $_->next ) {
                 @next = map { $map->() } @next;
                 return @next if @next;
             }
@@ -310,7 +317,8 @@ sub grep($self,$filter) {
     $self->map(sub{ $filter->() ? $_ : () })
 }
 
-sub spy($self,$sub) {
+sub spy($self,$sub=undef) {
+    $sub ||= sub { carp $_ };
     $self->map(sub{ $sub->(); $_ } ); 
 }
 
