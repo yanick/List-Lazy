@@ -1,6 +1,6 @@
 use 5.20.0;
 
-use Test::More tests => 1;
+use Test::More tests => 2;
 
 use List::Lazy qw/ lazy_fixed_list /;
 
