@@ -19,6 +19,8 @@ t/00-report-prereqs.t
 t/append.t
 t/basic.t
 t/lazy_fixed_list.t
+t/reduce.t
+t/spy.t
 t/until.t
 xt/release/pause-permissions.t
 xt/release/unused-vars.t
