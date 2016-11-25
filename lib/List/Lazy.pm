@@ -97,10 +97,10 @@ that many items left). C<$num> defaults to C<1>.
     my $value = $list->reduce( $reducing_sub, $initial_value );
 
 Iterates through the list and reduces its values via the C<$reducing_sub>, which
-will be passed the cumulative value and the next item via C<$::a> and C<$::b>. 
+will be passed the cumulative value and the next item via C<$a> and C<$b>. 
 If C<$initial_value> is not given, it defaults to the first element of the list.
 
-    my $sum = lazy_range( 1, 100 )->reduce( sub { $::a + $::b } );
+    my $sum = lazy_range( 1, 100 )->reduce( sub { $a + $b } );
 
 =head2 map
 
@@ -201,6 +201,16 @@ use Carp;
 *list_before = *List::MoreUtils::before;
 
 extends 'Exporter::Tiny';
+
+sub _exporter_validate_opts {
+    my $into = $_[1]->{into};
+    eval qq{
+        *${into}::a = *::a;
+        *${into}::b = *::b;
+        1;
+    } or die $@;
+}
+
 
 our @EXPORT_OK = qw/ lazy_list lazy_range lazy_fixed_list /;
 

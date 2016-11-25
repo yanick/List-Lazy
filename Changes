@@ -9,6 +9,7 @@ Revision history for List-Lazy
 
   [ ENHANCEMENTS ]
   - new method 'spy' added.
+  - $::a and $::b are now '$a' and '$b'.
 
   [ NEW FEATURES ]
 
