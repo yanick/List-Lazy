@@ -1,7 +1,0 @@
-^dist.ini
-^MANIFEST.SKIP
-List-Lazy.*
-^\.gitignore
-^\.git
-^\.build
-
