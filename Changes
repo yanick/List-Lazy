@@ -1,5 +1,20 @@
 Revision history for List-Lazy
 
 {{$NEXT}}
+  [ API CHANGES ]
 
+  [ BUG FIXES ]
+
+  [ DOCUMENTATION ]
+
+  [ ENHANCEMENTS ]
+
+  [ NEW FEATURES ]
+
+  [ STATISTICS ]
+
+0.0.1 2016-11-25
   - First version, unleashed on an unsuspecting world.
+
+  [ STATISTICS ]
+    - code churn: 2 files changed, 25 insertions(+), 1 deletion(-)
