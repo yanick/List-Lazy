@@ -1,19 +1,12 @@
 Revision history for List-Lazy
 
-{{$NEXT}}
-  [ API CHANGES ]
-
-  [ BUG FIXES ]
-
-  [ DOCUMENTATION ]
-
+0.1.0 2016-11-25
   [ ENHANCEMENTS ]
-  - new method 'spy' added.
-  - $::a and $::b are now '$a' and '$b'.
-
-  [ NEW FEATURES ]
+    - new method 'spy' added.
+    - $::a and $::b are now '$a' and '$b'.
 
   [ STATISTICS ]
+    - code churn: 5 files changed, 66 insertions(+), 7 deletions(-)
 
 0.0.1 2016-11-25
   - First version, unleashed on an unsuspecting world.
