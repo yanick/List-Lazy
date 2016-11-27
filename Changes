@@ -1,20 +1,15 @@
 Revision history for List-Lazy
 
-{{$NEXT}}
-  [ API CHANGES ]
-
+0.2.0 2016-11-27
   [ BUG FIXES ]
-  - Sub prototypes were declared before the signatures (not good).
-    Bumped minimal Perl to 5.22. [GH#1]
-
-  [ DOCUMENTATION ]
+    - Sub prototypes were declared before the signatures (not good). Bumped
+      minimal Perl to 5.22. [GH#1]
 
   [ ENHANCEMENTS ]
-  - Add 'batch' method. [GH#2]
-
-  [ NEW FEATURES ]
+    - Add 'batch' method. [GH#2]
 
   [ STATISTICS ]
+    - code churn: 5 files changed, 54 insertions(+), 7 deletions(-)
 
 0.1.0 2016-11-25
   [ ENHANCEMENTS ]
