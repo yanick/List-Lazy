@@ -10,6 +10,7 @@ Revision history for List-Lazy
   [ DOCUMENTATION ]
 
   [ ENHANCEMENTS ]
+  - Add 'batch' method. [GH#2]
 
   [ NEW FEATURES ]
 

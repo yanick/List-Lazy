@@ -102,6 +102,17 @@ If C<$initial_value> is not given, it defaults to the first element of the list.
 
     my $sum = lazy_range( 1, 100 )->reduce( sub { $a + $b } );
 
+=head2 batch
+
+    my $new_list = $list->batch($n);
+
+Creates a new list where the items of the original list are batched in groups
+of C<$n> (or less for the last batch).
+
+    my $list = lazy_fixed_list( 1..100 )->batch(3);
+    
+    my $x = $list->next;           # $x == [ 1, 2, 3]
+
 =head2 map
 
     my $new_list = $list->map( $mapper_sub );
@@ -322,6 +333,24 @@ sub map($self,$map) {
         },
     );
 }
+
+sub batch($self,$n) {
+    return List::Lazy->new(
+        state => [ $self->_clone, [] ],
+        generator => sub {
+            my $stash  = $_->[1];
+
+            while( my @next = $_->[0]->next ) {
+                push @$stash, @next;
+                if( @$stash >= $n ) {
+                    return [ splice @$stash, 0, $n ];
+                }
+            }
+
+            return @$stash ? [ splice @$stash ] : ();
+        },
+    );
+};
 
 sub grep($self,$filter) {
     $self->map(sub{ $filter->() ? $_ : () })
