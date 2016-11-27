@@ -4,6 +4,8 @@ Revision history for List-Lazy
   [ API CHANGES ]
 
   [ BUG FIXES ]
+  - Sub prototypes were declared before the signatures (not good).
+    Bumped minimal Perl to 5.22. [GH#1]
 
   [ DOCUMENTATION ]
 

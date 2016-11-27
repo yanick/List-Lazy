@@ -191,7 +191,7 @@ use MooX::HandlesVia;
 
 use Clone qw/ clone /;
 
-use 5.20.0;
+use 5.22.0;
 
 use experimental 'signatures', 'postderef';
 
@@ -214,14 +214,14 @@ sub _exporter_validate_opts {
 
 our @EXPORT_OK = qw/ lazy_list lazy_range lazy_fixed_list /;
 
-sub lazy_list :prototype(&@) ($generator,$state=undef) {
+sub lazy_list ($generator,$state=undef) :prototype(&@) {
     return List::Lazy->new(
         generator => $generator,
         state     => $state,
     );
 }
 
-sub lazy_range :prototype($$@) ($min,$max,$step=1) {
+sub lazy_range ($min,$max,$step=1) :prototype($$@) {
     my $it = ref $step ? $step : sub { $_ + $step };
 
     return scalar lazy_list { 
