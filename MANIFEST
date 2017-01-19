@@ -23,5 +23,4 @@ t/list-of-lists.t
 t/reduce.t
 t/spy.t
 t/until.t
-xt/release/pause-permissions.t
 xt/release/unused-vars.t
