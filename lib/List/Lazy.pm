@@ -30,6 +30,13 @@ that the list has reached its end.
 
     my $even_numbers = lazy_list { $_ += 2 } 0; # will return 2, 4, 6, ...
 
+In additional of regular values, the generator can also return lazy lists,
+which will be seamlessly expanded.
+
+    my $list = lazy_range( 1, undef )->map(sub { lazy_range( 1, $_ ) });
+    # will return 1, 1, 2, 1, 2, 3, 1, 2, 3, 4, ...
+
+
 =head2 lazy_range
 
     my $range = lazy_range $min, $max, $iterator;
@@ -296,18 +303,26 @@ sub next($self,$num=1) {
         if defined wantarray and not wantarray and $num != 1;
 
     while( @returns < $num and not $self->is_done ) {
-        $self->push_next( $self->generate_next ) unless $self->has_next;
-        push @returns, $self->shift_next if $self->has_next;
+        $self->push_next( $self->generate_next )
+            unless $self->has_next;
+
+        next unless $self->has_next;
+
+        if( ref $self->_next->[0] eq 'List::Lazy' ) {
+            my $list = $self->_next->[0];
+            push @returns, $list->next;
+            $self->shift_next if $list->is_done;
+        }
+        else {
+            push @returns, $self->shift_next;
+        }
     }
 
     return wantarray ? @returns : $returns[0];
 }
 
 sub all ($self) {
-    my @return = $self->_all_next;
-    push @return, $self->generate_next until $self->is_done;
-    $self->_next([]);
-    return @return;
+    return $self->next(1E99);
 }
 
 sub reduce($self,$reducer,$reduced=undef) {

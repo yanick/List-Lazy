@@ -19,6 +19,7 @@ t/append.t
 t/basic.t
 t/batch.t
 t/lazy_fixed_list.t
+t/list-of-lists.t
 t/reduce.t
 t/spy.t
 t/until.t
