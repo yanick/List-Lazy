@@ -1,206 +1,7 @@
-package List::Lazy; 
+package List::Lazy;
+our $AUTHORITY = 'cpan:YANICK'; 
 # ABSTRACT: Generate lists lazily
-
-=head1 SYNOPSIS
-
-    use List::Lazy qw/ lazy_range /;
-
-    my $range = lazy_range( 1, undef )->grep(sub{ $_ % 2})->map( sub { '!' x $_ } );
-
-    say $_ for $range->next(3); # prints ! !!! !!!!!
-
-
-=head1 DESCRIPTION
-
-C<List::Lazy> creates lists that lazily evaluate their next values on-demand.
-
-=head1 EXPORTED FUNCTIONS
-
-Lazy::List doesn't export any function by default, but will export the three following 
-functions on request.
-
-=head2 lazy_list
-
-    my $list  = lazy_list $generator_sub, $state;
-
-A convenience shortcut for the List::Lazy constructor. The C<$state> will be available
-(and can be changed) by the generator subroutine. The generator subroutine is expected
-to return a list of one or more next items of the list. Returning an empty list means
-that the list has reached its end.
-
-    my $even_numbers = lazy_list { $_ += 2 } 0; # will return 2, 4, 6, ...
-
-In additional of regular values, the generator can also return lazy lists,
-which will be seamlessly expanded.
-
-    my $list = lazy_range( 1, undef )->map(sub { lazy_range( 1, $_ ) });
-    # will return 1, 1, 2, 1, 2, 3, 1, 2, 3, 4, ...
-
-
-=head2 lazy_range
-
-    my $range = lazy_range $min, $max, $iterator;
-
-Creates a list iterating over a range of values. C<$min> and C<$max> are required, but C<$max>  can be 
-C<undef> (meaning no upper limit). The C<$iterator> is optional and defaults to the value C<1>. 
-The C<$iterator> can be a number, which will be the step at which the numbers are increased, or a coderef that will 
-be passed the previous value as C<$_>, and is expected to return the next value.
-
-    my $palinumbers = lazy_range 99, undef, sub { do { $_++ } until $_ eq reverse $_; $_ };
-
-    say join ' ', $palinumbers->next(3); # 99 101 111
-
-=head2 lazy_fixed_list
-
-    my $list = lazy_fixed_list @some_array;
-
-Creates a lazy list that will returns the values of the given array. 
-
-=head1 CLASS
-
-=head2 new
-
-    my $list = List::Lazy->new(
-        state => 1,
-        generator => sub {
-            $_++;
-        },
-    );
-
-Creates a lazy list.
-
-=head3 arguments
-
-=over state
-
-The state will be passed to the generator as C<$_>. If it is modified by the generator,
-its new value will be saved for the next invocation.
-
-=over generator
-
-A coderef that generates one or more next items for the list. If it returns an empty list,
-the stream will be considered to be exhausted.
-
-
-=back
-
-=head2 is_done
-
-Returns C<true> is the list is exhausted.
-
-=head2 next($num)
-
-Returns the next C<$num> items of the list (or less if the list doesn't have
-that many items left). C<$num> defaults to C<1>.
-
-    my $range = lazy_range 1, 100;
-
-    while( my $next = $range->next ) {
-        ...
-    }
-
-=head2 reduce
-
-    my $value = $list->reduce( $reducing_sub, $initial_value );
-
-Iterates through the list and reduces its values via the C<$reducing_sub>, which
-will be passed the cumulative value and the next item via C<$a> and C<$b>. 
-If C<$initial_value> is not given, it defaults to the first element of the list.
-
-    my $sum = lazy_range( 1, 100 )->reduce( sub { $a + $b } );
-
-=head2 batch
-
-    my $new_list = $list->batch($n);
-
-Creates a new list where the items of the original list are batched in groups
-of C<$n> (or less for the last batch).
-
-    my $list = lazy_fixed_list( 1..100 )->batch(3);
-    
-    my $x = $list->next;           # $x == [ 1, 2, 3]
-
-=head2 map
-
-    my $new_list = $list->map( $mapper_sub );
-
-Creates a new list by applying the transformation given by C<$mapper_sub> to the
-original list. The sub ill be passed the original next item via C<$_>
-and is expected to return its transformation, which 
-can modify the item, explode it into many items, or suppress it,
-
-
-Note that the new list do a deep clone of the original list's state, so reading
-from the new list won't affect the original list.
-
-    my $recount = ( lazy_range 1, 100 )->map( sub { 1..$_ } );
-    # will return 1 1 2 1 2 3 1 2 3 4 ...
-
-
-=head2 grep
-
-    my $new_list = $list->grep( $filter_sub );
-
-Creates a new list by applying the filtering given by C<$filter_sub> to the
-original list. The sub will be passed the original next item via C<$_>
-and is expected to return a boolean indicating if the item should be kept or not.
-
-
-Note that the new list do a deep clone of the original list's state, so reading
-from the new list won't affect the original list.
-
-    my $odd = ( lazy_range 1, 100 )->grep( sub { $_ % 2 } );
-
-=head2 spy
-
-    my $new_list = $list->spy( $sub );
-
-Creates a new list that will execute the spy C<$sub> for
-every value it sees (with the value assigned to C<$_>). 
-
-If C<$sub> is not given, it'll C<carp> the values.
-
-=head2 until
-
-    my $new_list = $list->until( $condition );
-
-
-Creates a new list that truncates the original list as soon
-as the condition is met.
-
-    my $to_ten = $list->until(sub{ $_ > 10 });
-
-=head2 append
-
-    my $new_list = $list->append( @other_lists );
-
-Creates a new list that will return first the elements of C<$list>,
-and those of the C<@other_lists>. 
-
-Note that the new list do a deep clone of the original lists's state, so reading
-from the new list won't affect the original lists.
-
-    my $range = lazy_range 1..100;
-    my $twice = $range->append( $range );
-
-=head2 prepend
-
-    my $new_list = $list->prepend( @other_lists );
-
-Like C<append>, but prepend the other lists to the current one.
-
-Note that the new list do a deep clone of the original lists's state, so reading
-from the new list won't affect the original lists.
-
-=head2 all
-
-    my @rest = $list->all;
-
-Returns all the remaining values of the list. Be careful: if the list is unbounded, 
-calling C<all()> on it will result into an infinite loop.
-
-
-=cut
+$List::Lazy::VERSION = '0.3.0';
 
 
 
@@ -423,3 +224,221 @@ sub prepend( $self, @list ) {
 }
 
 1;
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+List::Lazy - Generate lists lazily
+
+=head1 VERSION
+
+version 0.3.0
+
+=head1 SYNOPSIS
+
+    use List::Lazy qw/ lazy_range /;
+
+    my $range = lazy_range( 1, undef )->grep(sub{ $_ % 2})->map( sub { '!' x $_ } );
+
+    say $_ for $range->next(3); # prints ! !!! !!!!!
+
+=head1 DESCRIPTION
+
+C<List::Lazy> creates lists that lazily evaluate their next values on-demand.
+
+=head1 EXPORTED FUNCTIONS
+
+Lazy::List doesn't export any function by default, but will export the three following 
+functions on request.
+
+=head2 lazy_list
+
+    my $list  = lazy_list $generator_sub, $state;
+
+A convenience shortcut for the List::Lazy constructor. The C<$state> will be available
+(and can be changed) by the generator subroutine. The generator subroutine is expected
+to return a list of one or more next items of the list. Returning an empty list means
+that the list has reached its end.
+
+    my $even_numbers = lazy_list { $_ += 2 } 0; # will return 2, 4, 6, ...
+
+In additional of regular values, the generator can also return lazy lists,
+which will be seamlessly expanded.
+
+    my $list = lazy_range( 1, undef )->map(sub { lazy_range( 1, $_ ) });
+    # will return 1, 1, 2, 1, 2, 3, 1, 2, 3, 4, ...
+
+=head2 lazy_range
+
+    my $range = lazy_range $min, $max, $iterator;
+
+Creates a list iterating over a range of values. C<$min> and C<$max> are required, but C<$max>  can be 
+C<undef> (meaning no upper limit). The C<$iterator> is optional and defaults to the value C<1>. 
+The C<$iterator> can be a number, which will be the step at which the numbers are increased, or a coderef that will 
+be passed the previous value as C<$_>, and is expected to return the next value.
+
+    my $palinumbers = lazy_range 99, undef, sub { do { $_++ } until $_ eq reverse $_; $_ };
+
+    say join ' ', $palinumbers->next(3); # 99 101 111
+
+=head2 lazy_fixed_list
+
+    my $list = lazy_fixed_list @some_array;
+
+Creates a lazy list that will returns the values of the given array. 
+
+=head1 CLASS
+
+=head2 new
+
+    my $list = List::Lazy->new(
+        state => 1,
+        generator => sub {
+            $_++;
+        },
+    );
+
+Creates a lazy list.
+
+=head3 arguments
+
+=over state
+
+The state will be passed to the generator as C<$_>. If it is modified by the generator,
+its new value will be saved for the next invocation.
+
+=over generator
+
+A coderef that generates one or more next items for the list. If it returns an empty list,
+the stream will be considered to be exhausted.
+
+=back
+
+=head2 is_done
+
+Returns C<true> is the list is exhausted.
+
+=head2 next($num)
+
+Returns the next C<$num> items of the list (or less if the list doesn't have
+that many items left). C<$num> defaults to C<1>.
+
+    my $range = lazy_range 1, 100;
+
+    while( my $next = $range->next ) {
+        ...
+    }
+
+=head2 reduce
+
+    my $value = $list->reduce( $reducing_sub, $initial_value );
+
+Iterates through the list and reduces its values via the C<$reducing_sub>, which
+will be passed the cumulative value and the next item via C<$a> and C<$b>. 
+If C<$initial_value> is not given, it defaults to the first element of the list.
+
+    my $sum = lazy_range( 1, 100 )->reduce( sub { $a + $b } );
+
+=head2 batch
+
+    my $new_list = $list->batch($n);
+
+Creates a new list where the items of the original list are batched in groups
+of C<$n> (or less for the last batch).
+
+    my $list = lazy_fixed_list( 1..100 )->batch(3);
+    
+    my $x = $list->next;           # $x == [ 1, 2, 3]
+
+=head2 map
+
+    my $new_list = $list->map( $mapper_sub );
+
+Creates a new list by applying the transformation given by C<$mapper_sub> to the
+original list. The sub ill be passed the original next item via C<$_>
+and is expected to return its transformation, which 
+can modify the item, explode it into many items, or suppress it,
+
+Note that the new list do a deep clone of the original list's state, so reading
+from the new list won't affect the original list.
+
+    my $recount = ( lazy_range 1, 100 )->map( sub { 1..$_ } );
+    # will return 1 1 2 1 2 3 1 2 3 4 ...
+
+=head2 grep
+
+    my $new_list = $list->grep( $filter_sub );
+
+Creates a new list by applying the filtering given by C<$filter_sub> to the
+original list. The sub will be passed the original next item via C<$_>
+and is expected to return a boolean indicating if the item should be kept or not.
+
+Note that the new list do a deep clone of the original list's state, so reading
+from the new list won't affect the original list.
+
+    my $odd = ( lazy_range 1, 100 )->grep( sub { $_ % 2 } );
+
+=head2 spy
+
+    my $new_list = $list->spy( $sub );
+
+Creates a new list that will execute the spy C<$sub> for
+every value it sees (with the value assigned to C<$_>). 
+
+If C<$sub> is not given, it'll C<carp> the values.
+
+=head2 until
+
+    my $new_list = $list->until( $condition );
+
+Creates a new list that truncates the original list as soon
+as the condition is met.
+
+    my $to_ten = $list->until(sub{ $_ > 10 });
+
+=head2 append
+
+    my $new_list = $list->append( @other_lists );
+
+Creates a new list that will return first the elements of C<$list>,
+and those of the C<@other_lists>. 
+
+Note that the new list do a deep clone of the original lists's state, so reading
+from the new list won't affect the original lists.
+
+    my $range = lazy_range 1..100;
+    my $twice = $range->append( $range );
+
+=head2 prepend
+
+    my $new_list = $list->prepend( @other_lists );
+
+Like C<append>, but prepend the other lists to the current one.
+
+Note that the new list do a deep clone of the original lists's state, so reading
+from the new list won't affect the original lists.
+
+=head2 all
+
+    my @rest = $list->all;
+
+Returns all the remaining values of the list. Be careful: if the list is unbounded, 
+calling C<all()> on it will result into an infinite loop.
+
+=head1 AUTHOR
+
+Yanick Champoux <yanick@babyl.dyndns.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2016 by Yanick Champoux.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
