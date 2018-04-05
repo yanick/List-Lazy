@@ -4,6 +4,7 @@ Revision history for List-Lazy
  [API CHANGES]
 
  [BUG FIXES]
+ - Make module compatible with perl 5.27.7+. [GH#3]
 
  [DOCUMENTATION]
 
