@@ -232,14 +232,16 @@ sub _exporter_validate_opts {
 
 our @EXPORT_OK = qw/ lazy_list lazy_range lazy_fixed_list /;
 
-sub lazy_list ($generator,$state=undef) :prototype(&@) {
+sub _lazy_list ($generator,$state=undef) {
     return List::Lazy->new(
         generator => $generator,
         state     => $state,
     );
 }
 
-sub lazy_range ($min,$max,$step=1) :prototype($$@) {
+sub lazy_list :prototype(&@) { goto &_lazy_list }
+
+sub _lazy_range ($min,$max,$step=1) {
     my $it = ref $step ? $step : sub { $_ + $step };
 
     return scalar lazy_list { 
@@ -249,6 +251,9 @@ sub lazy_range ($min,$max,$step=1) :prototype($$@) {
         return $current;
     } $min;
 }
+
+
+sub lazy_range :prototype($$@) { goto &_lazy_range }
 
 sub lazy_fixed_list {
     my @list = @_;
