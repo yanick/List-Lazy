@@ -6,6 +6,7 @@ Revision history for List-Lazy
  [BUG FIXES]
 
  [DOCUMENTATION]
+   - Fixed pod error as reported by CPANTS. (GH#5, Mohammad S Anwar)
 
  [ENHANCEMENTS]
 
