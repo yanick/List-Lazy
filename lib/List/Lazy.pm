@@ -312,12 +312,14 @@ Creates a lazy list.
 
 =head3 arguments
 
-=over state
+=over 4
+
+=item state
 
 The state will be passed to the generator as C<$_>. If it is modified by the generator,
 its new value will be saved for the next invocation.
 
-=over generator
+=item generator
 
 A coderef that generates one or more next items for the list. If it returns an empty list,
 the stream will be considered to be exhausted.
