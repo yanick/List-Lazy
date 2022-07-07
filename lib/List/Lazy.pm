@@ -1,4 +1,4 @@
-package List::Lazy; 
+package List::Lazy;
 # ABSTRACT: Generate lists lazily
 
 =head1 SYNOPSIS
@@ -16,7 +16,7 @@ C<List::Lazy> creates lists that lazily evaluate their next values on-demand.
 
 =head1 EXPORTED FUNCTIONS
 
-Lazy::List doesn't export any function by default, but will export the three following 
+Lazy::List doesn't export any function by default, but will export the three following
 functions on request.
 
 =head2 lazy_list
@@ -41,9 +41,9 @@ which will be seamlessly expanded.
 
     my $range = lazy_range $min, $max, $iterator;
 
-Creates a list iterating over a range of values. C<$min> and C<$max> are required, but C<$max>  can be 
-C<undef> (meaning no upper limit). The C<$iterator> is optional and defaults to the value C<1>. 
-The C<$iterator> can be a number, which will be the step at which the numbers are increased, or a coderef that will 
+Creates a list iterating over a range of values. C<$min> and C<$max> are required, but C<$max>  can be
+C<undef> (meaning no upper limit). The C<$iterator> is optional and defaults to the value C<1>.
+The C<$iterator> can be a number, which will be the step at which the numbers are increased, or a coderef that will
 be passed the previous value as C<$_>, and is expected to return the next value.
 
     my $palinumbers = lazy_range 99, undef, sub { do { $_++ } until $_ eq reverse $_; $_ };
@@ -54,7 +54,7 @@ be passed the previous value as C<$_>, and is expected to return the next value.
 
     my $list = lazy_fixed_list @some_array;
 
-Creates a lazy list that will returns the values of the given array. 
+Creates a lazy list that will returns the values of the given array.
 
 =head1 CLASS
 
@@ -106,7 +106,7 @@ that many items left). C<$num> defaults to C<1>.
     my $value = $list->reduce( $reducing_sub, $initial_value );
 
 Iterates through the list and reduces its values via the C<$reducing_sub>, which
-will be passed the cumulative value and the next item via C<$a> and C<$b>. 
+will be passed the cumulative value and the next item via C<$a> and C<$b>.
 If C<$initial_value> is not given, it defaults to the first element of the list.
 
     my $sum = lazy_range( 1, 100 )->reduce( sub { $a + $b } );
@@ -119,7 +119,7 @@ Creates a new list where the items of the original list are batched in groups
 of C<$n> (or less for the last batch).
 
     my $list = lazy_fixed_list( 1..100 )->batch(3);
-    
+
     my $x = $list->next;           # $x == [ 1, 2, 3]
 
 =head2 map
@@ -128,7 +128,7 @@ of C<$n> (or less for the last batch).
 
 Creates a new list by applying the transformation given by C<$mapper_sub> to the
 original list. The sub ill be passed the original next item via C<$_>
-and is expected to return its transformation, which 
+and is expected to return its transformation, which
 can modify the item, explode it into many items, or suppress it,
 
 
@@ -158,7 +158,7 @@ from the new list won't affect the original list.
     my $new_list = $list->spy( $sub );
 
 Creates a new list that will execute the spy C<$sub> for
-every value it sees (with the value assigned to C<$_>). 
+every value it sees (with the value assigned to C<$_>).
 
 If C<$sub> is not given, it'll C<carp> the values.
 
@@ -177,7 +177,7 @@ as the condition is met.
     my $new_list = $list->append( @other_lists );
 
 Creates a new list that will return first the elements of C<$list>,
-and those of the C<@other_lists>. 
+and those of the C<@other_lists>.
 
 Note that the new list do a deep clone of the original lists's state, so reading
 from the new list won't affect the original lists.
@@ -198,7 +198,7 @@ from the new list won't affect the original lists.
 
     my @rest = $list->all;
 
-Returns all the remaining values of the list. Be careful: if the list is unbounded, 
+Returns all the remaining values of the list. Be careful: if the list is unbounded,
 calling C<all()> on it will result into an infinite loop.
 
 
@@ -246,7 +246,7 @@ sub lazy_list :prototype(&@) { goto &_lazy_list }
 sub _lazy_range ($min,$max,$step=1) {
     my $it = ref $step ? $step : sub { $_ + $step };
 
-    return scalar lazy_list { 
+    return scalar lazy_list {
         return if defined $max and  $_ > $max;
         my $current = $_;
         $_ = $it->();
@@ -268,7 +268,7 @@ sub lazy_fixed_list {
 
 has generator => (
     is => 'ro',
-    required => 1, 
+    required => 1,
 );
 
 has state => (
@@ -279,7 +279,7 @@ has _next => (
     is => 'rw',
     handles_via => 'Array',
     handles => {
-        has_next   => 'count', 
+        has_next   => 'count',
         shift_next => 'shift',
         push_next => 'push',
         _all_next => 'elements',
@@ -332,15 +332,19 @@ sub all ($self) {
     return $self->next(1E99);
 }
 
-sub reduce($self,$reducer,$reduced=undef) {
-    $reduced = $self->next if @_ < 3;
+{
+    no warnings;
 
-    while( my $next = $self->next ) {
-        local ( $::a, $::b ) = ( $reduced, $next );
-        $reduced = $reducer->();
+    sub reduce($self,$reducer,$reduced=undef) {
+        $reduced = $self->next if @_ < 3;
+
+        while( my $next = $self->next ) {
+            local ( $::a, $::b ) = ( $reduced, $next );
+            $reduced = $reducer->();
+        }
+
+        return $reduced;
     }
-
-    return $reduced;
 }
 
 sub map($self,$map) {
@@ -380,7 +384,7 @@ sub grep($self,$filter) {
 
 sub spy($self,$sub=undef) {
     $sub ||= sub { carp $_ };
-    $self->map(sub{ $sub->(); $_ } ); 
+    $self->map(sub{ $sub->(); $_ } );
 }
 
 sub _clone($self,%args) {

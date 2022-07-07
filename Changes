@@ -8,6 +8,9 @@ Revision history for List-Lazy
  [DOCUMENTATION]
    - Fixed pod error as reported by CPANTS. (GH#5, Mohammad S Anwar)
 
+ [MISC]
+    - Tweak function signature to play well with perl 5.36.
+
  [ENHANCEMENTS]
 
  [NEW FEATURES]
