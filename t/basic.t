@@ -1,5 +1,4 @@
 use Test2::V0;
-use Test::Exception;
 
 use List::Lazy qw/ lazy_range lazy_list lazy_fixed_list /;
 
