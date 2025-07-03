@@ -9,6 +9,7 @@ Revision history for List-Lazy
 
  [ENHANCEMENTS]
  - Add a safety limit of 10_000 returned values for `next()`.
+ - Can `append()` and `prepend()` values as well as lazy lists.
 
  [NEW FEATURES]
 
