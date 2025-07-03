@@ -101,6 +101,9 @@ that many items left). C<$num> defaults to C<1>.
         ...
     }
 
+As a safety valve, if the number of entries to be returned exceeds 
+<$Lazy::List::MAX_NEXT> (which defaults to C<10_000>), the call will die.
+
 =head2 reduce
 
     my $value = $list->reduce( $reducing_sub, $initial_value );
@@ -198,13 +201,10 @@ from the new list won't affect the original lists.
 
     my @rest = $list->all;
 
-Returns all the remaining values of the list. Be careful: if the list is unbounded,
-calling C<all()> on it will result into an infinite loop.
-
+Returns all the remaining values of the list. As for C<next>, this method 
+will die if the number of entries generated exceeds C<$Lazy::List::MAX_NEXT>.
 
 =cut
-
-
 
 use Moo;
 use MooX::HandlesVia;
@@ -231,8 +231,9 @@ sub _exporter_validate_opts {
     } or die $@;
 }
 
-
 our @EXPORT_OK = qw/ lazy_list lazy_range lazy_fixed_list /;
+
+our $MAX_NEXT = 10_000;
 
 sub _lazy_list ($generator,$state=undef) {
     return List::Lazy->new(
@@ -306,10 +307,20 @@ sub generate_next($self) {
 sub next($self,$num=1) {
     my @returns;
 
+    my $count = 0;
+
     croak "next called in scalar context with \$num = $num"
         if defined wantarray and not wantarray and $num != 1;
 
     while( @returns < $num and not $self->is_done ) {
+        if( ++$count > $MAX_NEXT ) {
+            die <<"END";
+Number of items returned by the lazy list exceeds MAX_NEXT ($MAX_NEXT).
+
+If this is what you want, you can increase this limit via \$Lazy::List::MAX_NEXT
+END
+        }
+
         $self->push_next( $self->generate_next )
             unless $self->has_next;
 
